@@ -77,12 +77,10 @@
             gap: 12px;
         }
         #pm-header-logo {
-            width: 38px; height: 38px; border-radius: 50%;
-            background: linear-gradient(135deg, #1e3a8a, #ef4444);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.1rem; color: white; flex-shrink: 0;
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 38px; height: 38px;
+            object-fit: contain;
+            flex-shrink: 0;
+            filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.4));
         }
         #pm-header-title {
             font-size: 1.1rem; font-weight: 800;
@@ -832,7 +830,7 @@
         <!-- ── BRANDED HEADER ── -->
         <div id="pm-header">
             <div id="pm-header-left">
-                <div id="pm-header-logo"><i class="fas fa-shield-halved"></i></div>
+                <img id="pm-header-logo" src="https://cityofpalayan.gov.ph/wp-content/uploads/2026/04/PalayanCityDRRMO_Logo-removebg-preview-1.png" alt="Palayan City DRRMO Logo">
                 <div id="pm-header-title">
                     Palayan City CDRRMO
                     <span>Heat Index Monitoring Dashboard</span>
