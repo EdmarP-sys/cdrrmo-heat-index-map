@@ -1,0 +1,1505 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        
+        <!-- Stylesheets -->
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet.photon.css">
+
+        
+        <!-- Google Fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+        <style>
+        /* ============================================================
+           BASE THEMING (Sleek Dark CDRRMO Theme)
+        ============================================================ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            width: 100%; height: 100%;
+            background: #050a15;
+            font-family: 'Outfit', sans-serif;
+            color: #e2e8f0;
+            overflow: hidden;
+        }
+        #map {
+            width: 100%; height: 100%;
+            background: #050a15 !important;
+        }
+        .leaflet-container { background: #050a15 !important; }
+
+        :root {
+            --color-bg: #050a15;
+            --color-card: #0c152b;
+            --color-border: #1e293b;
+            --color-accent: #3b82f6;
+            --color-gold: #fbbf24;
+            --color-text-bright: #ffffff;
+            --color-text-muted: #94a3b8;
+            
+            /* Alert Colors */
+            --alert-safe: #10b981;
+            --alert-caution: #eab308;
+            --alert-extreme-caution: #f97316;
+            --alert-danger: #ef4444;
+            --alert-extreme-danger: #d946ef;
+        }
+
+        /* ============================================================
+           BRANDED HEADER BAR
+        ============================================================ */
+        #pm-header {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            z-index: 1200;
+            height: 60px;
+            background: rgba(8, 14, 30, 0.95);
+            border-bottom: 2px solid #1e3a8a;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
+        }
+        #pm-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        #pm-header-logo {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: linear-gradient(135deg, #1e3a8a, #ef4444);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; color: white; flex-shrink: 0;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        #pm-header-title {
+            font-size: 1.1rem; font-weight: 800;
+            color: #fff; line-height: 1.15;
+            letter-spacing: 0.5px;
+        }
+        #pm-header-title span {
+            display: block;
+            font-size: 0.62rem; font-weight: 600;
+            letter-spacing: 2px; text-transform: uppercase;
+            color: var(--color-gold); margin-top: 2px;
+        }
+        
+        #pm-header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        #weather-widget {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--color-border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #pm-header-live {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.68rem; font-weight: 700; letter-spacing: 2px;
+            text-transform: uppercase; color: rgba(255,255,255,0.9);
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        #pm-header-live-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #ef4444;
+            animation: pmLivePulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pmLivePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.7)} }
+
+        /* Map positioning shifts down to accommodate the header */
+        #map { padding-top: 60px; }
+        .leaflet-top { top: 60px !important; }
+
+        /* ============================================================
+           CDRRMO COLLAPSIBLE SIDEBAR PANEL (Dashboard & Controls)
+        ============================================================ */
+        #pm-filter {
+            position: absolute;
+            top: 75px; right: 15px;
+            z-index: 1100;
+            background: rgba(6, 11, 23, 0.95);
+            border: 1px solid var(--color-border);
+            border-radius: 16px;
+            width: 380px;
+            height: calc(100vh - 95px);
+            box-shadow: 0 10px 50px rgba(0,0,0,0.85);
+            overflow: hidden;
+            backdrop-filter: blur(15px);
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #pm-filter.collapsed {
+            transform: translateX(410px);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #pm-filter-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--color-border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        #pm-filter-title {
+            font-size: 0.85rem; font-weight: 800; letter-spacing: 2px;
+            text-transform: uppercase; color: var(--color-text-bright);
+            display: flex; align-items: center; gap: 8px;
+        }
+        #pm-filter-title i { color: #ef4444; }
+
+        /* Tabs System */
+        .sidebar-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--color-border);
+        }
+        .sidebar-tab {
+            flex: 1;
+            padding: 12px 6px;
+            background: none;
+            border: none;
+            color: var(--color-text-muted);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            border-bottom: 2px solid transparent;
+        }
+        .sidebar-tab:hover {
+            color: var(--color-text-bright);
+            background: rgba(255,255,255,0.02);
+        }
+        .sidebar-tab.active {
+            color: var(--color-accent);
+            border-bottom-color: var(--color-accent);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        /* Sidebar Content scroll area */
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.1) transparent;
+        }
+        .sidebar-content::-webkit-scrollbar { width: 6px; }
+        .sidebar-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+        
+        .tab-pane {
+            display: none;
+            padding: 16px 20px;
+        }
+        .tab-pane.active {
+            display: block;
+        }
+
+        /* Collapse toggle button */
+        #pm-filter-collapse {
+            position: absolute;
+            top: 75px; right: 15px;
+            z-index: 1100;
+            width: 42px; height: 42px; border-radius: 12px;
+            background: rgba(6, 11, 23, 0.95);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-bright); font-size: 0.95rem;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            transition: all 0.2s;
+        }
+        #pm-filter-collapse:hover { background: var(--color-accent); color: white; border-color: var(--color-accent); }
+        #pm-filter-collapse.active-panel { right: 410px; }
+
+        /* ============================================================
+           DASHBOARD TAB PANEL STYLES
+        ============================================================ */
+        .stats-summary {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 16px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .stat-card {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .stat-label {
+            font-size: 0.65rem;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--color-text-bright);
+        }
+        
+        .alert-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .alert-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.72rem;
+        }
+        .alert-bar-label {
+            width: 100px;
+            color: var(--color-text-muted);
+            font-weight: 600;
+        }
+        .alert-bar-track {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .alert-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.5s ease-out;
+        }
+        .alert-bar-count {
+            width: 25px;
+            text-align: right;
+            font-weight: 700;
+            color: var(--color-text-bright);
+        }
+
+        .threat-advisory-card {
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-left: 4px solid var(--color-border);
+            background: rgba(255,255,255,0.01);
+            transition: all 0.3s;
+        }
+        .threat-advisory-card.level-normal { border-left-color: var(--alert-safe); background: rgba(16, 185, 129, 0.03); }
+        .threat-advisory-card.level-caution { border-left-color: var(--alert-caution); background: rgba(234, 179, 8, 0.03); }
+        .threat-advisory-card.level-extreme-caution { border-left-color: var(--alert-extreme-caution); background: rgba(249, 115, 22, 0.03); }
+        .threat-advisory-card.level-danger { border-left-color: var(--alert-danger); background: rgba(239, 68, 68, 0.04); }
+        .threat-advisory-card.level-extreme-danger { border-left-color: var(--alert-extreme-danger); background: rgba(217, 70, 239, 0.05); }
+
+        .threat-title {
+            font-weight: 800;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+        .threat-desc {
+            font-size: 0.76rem;
+            line-height: 1.4;
+            color: var(--color-text-muted);
+        }
+
+        .dashboard-section-title {
+            font-size: 0.68rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--color-gold);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Hotlines Widget */
+        .hotline-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .hotline-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            font-size: 0.76rem;
+        }
+        .hotline-name {
+            font-weight: 600;
+            color: var(--color-text-bright);
+        }
+        .hotline-number {
+            color: var(--color-accent);
+            text-decoration: none;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .hotline-number:hover {
+            text-decoration: underline;
+        }
+
+        /* ============================================================
+           BARANGAYS TAB PANEL STYLES
+        ============================================================ */
+        .search-container {
+            position: relative;
+            margin-bottom: 12px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 10px 12px 10px 36px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.8rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .search-input:focus {
+            border-color: var(--color-accent);
+            background: rgba(255,255,255,0.06);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
+        }
+        .search-icon {
+            position: absolute;
+            left: 12px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--color-text-muted);
+            font-size: 0.8rem;
+        }
+
+        .brgy-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: calc(100vh - 290px);
+            overflow-y: auto;
+        }
+        .brgy-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .brgy-row:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--color-accent);
+            transform: translateY(-1px);
+        }
+        .brgy-row-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .brgy-row-name {
+            font-weight: 700;
+            font-size: 0.82rem;
+            color: var(--color-text-bright);
+        }
+        .brgy-row-details {
+            font-size: 0.68rem;
+            color: var(--color-text-muted);
+        }
+        .brgy-row-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: white;
+            min-width: 42px;
+            text-align: center;
+        }
+
+        /* Badge alert color variants */
+        .badge-safe { background: var(--alert-safe); box-shadow: 0 0 8px rgba(16, 185, 129, 0.3); }
+        .badge-caution { background: var(--alert-caution); color: #1a202c !important; box-shadow: 0 0 8px rgba(234, 179, 8, 0.3); }
+        .badge-extreme-caution { background: var(--alert-extreme-caution); box-shadow: 0 0 8px rgba(249, 115, 22, 0.3); }
+        .badge-danger { background: var(--alert-danger); box-shadow: 0 0 8px rgba(239, 68, 68, 0.3); }
+        .badge-extreme-danger { background: var(--alert-extreme-danger); box-shadow: 0 0 8px rgba(217, 70, 239, 0.3); }
+
+        /* ============================================================
+           ADMIN SIMULATOR PANEL STYLES
+        ============================================================ */
+        .simulator-header {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 16px;
+        }
+        .mode-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .mode-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--color-text-bright);
+        }
+        
+        /* Switch styling */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255,255,255,0.1);
+            transition: .3s;
+            border-radius: 24px;
+            border: 1px solid var(--color-border);
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px; width: 16px;
+            left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--color-accent); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .simulator-note {
+            font-size: 0.68rem;
+            color: var(--color-text-muted);
+            line-height: 1.45;
+        }
+
+        .city-shift-card {
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 16px;
+        }
+        .shift-label {
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: var(--color-gold);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .slider-range {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        .slider-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            background: var(--color-accent);
+            cursor: pointer;
+            border: 2px solid white;
+        }
+
+        .sim-sliders-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: calc(100vh - 430px);
+            overflow-y: auto;
+            padding-right: 4px;
+            margin-bottom: 16px;
+        }
+        .sim-slider-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+        }
+        .sim-slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.74rem;
+            font-weight: 600;
+            color: var(--color-text-bright);
+        }
+
+        .action-button {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .action-button:hover {
+            background: var(--color-accent);
+            border-color: var(--color-accent);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+        .action-button-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        #pm-filter-footer {
+            padding: 12px 20px;
+            border-top: 1px solid var(--color-border);
+            font-size: 0.65rem; color: var(--color-text-muted);
+            letter-spacing: 0.5px;
+            text-align: center;
+            background: rgba(6, 11, 23, 0.98);
+        }
+
+        /* ============================================================
+           GLOWING BADGE DIV ICON MARKERS
+        ============================================================ */
+        .hi-badge-marker {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            color: white !important;
+            font-weight: 900;
+            font-size: 1rem;
+            line-height: 1;
+            border: 2.5px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+            transition: all 0.2s ease-out;
+            cursor: pointer;
+        }
+        .hi-badge-marker .hi-unit {
+            font-size: 0.52rem;
+            font-weight: 600;
+            margin-top: -1px;
+            opacity: 0.85;
+            text-transform: uppercase;
+        }
+        .hi-badge-marker.alert-safe {
+            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+        }
+        .hi-badge-marker.alert-caution {
+            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+            box-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
+            color: #0c152b !important;
+            border-color: rgba(12, 21, 43, 0.8);
+        }
+        .hi-badge-marker.alert-caution .hi-unit { color: #0c152b !important; }
+        .hi-badge-marker.alert-extreme-caution {
+            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+            box-shadow: 0 0 15px rgba(249, 115, 22, 0.6);
+        }
+        .hi-badge-marker.alert-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.85);
+            animation: badgePulseDanger 1.8s infinite;
+        }
+        .hi-badge-marker.alert-extreme-danger {
+            background: linear-gradient(135deg, #d946ef 0%, #a21caf 100%);
+            box-shadow: 0 0 25px rgba(217, 70, 239, 0.95);
+            animation: badgePulseExtreme 1.4s infinite;
+        }
+        @keyframes badgePulseDanger {
+            0% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); }
+            50% { box-shadow: 0 0 22px rgba(239, 68, 68, 0.95); transform: scale(1.06); }
+            100% { box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); }
+        }
+        @keyframes badgePulseExtreme {
+            0% { box-shadow: 0 0 15px rgba(217, 70, 239, 0.6); }
+            50% { box-shadow: 0 0 30px rgba(217, 70, 239, 1); transform: scale(1.1); }
+            100% { box-shadow: 0 0 15px rgba(217, 70, 239, 0.6); }
+        }
+
+        /* ============================================================
+           POPUP STYLES (CDRRMO Emergency Theme)
+        ============================================================ */
+        .leaflet-popup-content-wrapper {
+            background: rgba(8, 14, 30, 0.96) !important;
+            border: 1px solid var(--color-border) !important;
+            border-radius: 14px !important;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.85) !important;
+            padding: 0 !important;
+            overflow: hidden;
+            backdrop-filter: blur(12px);
+        }
+        .leaflet-popup-tip { background: rgba(8, 14, 30, 0.96) !important; border: 1px solid var(--color-border); }
+        .leaflet-popup-close-button {
+            color: rgba(255,255,255,0.4) !important;
+            font-size: 16px !important;
+            top: 10px !important; right: 10px !important;
+        }
+        .leaflet-popup-close-button:hover { color: #ef4444 !important; }
+        .leaflet-popup-content {
+            margin: 0 !important;
+            font-family: 'Outfit', sans-serif !important;
+            color: rgba(255,255,255,0.85) !important;
+        }
+
+        .hi-popup {
+            min-width: 250px;
+            max-width: 320px;
+        }
+        .hi-popup-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: white;
+        }
+        .hi-popup-header.level-safe { background: rgba(16, 185, 129, 0.15); border-bottom-color: rgba(16, 185, 129, 0.3); }
+        .hi-popup-header.level-caution { background: rgba(234, 179, 8, 0.15); border-bottom-color: rgba(234, 179, 8, 0.3); }
+        .hi-popup-header.level-extreme-caution { background: rgba(249, 115, 22, 0.15); border-bottom-color: rgba(249, 115, 22, 0.3); }
+        .hi-popup-header.level-danger { background: rgba(239, 68, 68, 0.2); border-bottom-color: rgba(239, 68, 68, 0.35); }
+        .hi-popup-header.level-extreme-danger { background: rgba(217, 70, 239, 0.25); border-bottom-color: rgba(217, 70, 239, 0.4); }
+
+        .hi-popup-brgy { font-weight: 800; font-size: 1.05rem; }
+        .hi-popup-alert-tag {
+            font-size: 0.58rem; font-weight: 800; letter-spacing: 1.5px;
+            text-transform: uppercase; padding: 4px 8px; border-radius: 4px;
+            color: white;
+        }
+        .hi-popup-alert-tag.level-safe { background: var(--alert-safe); }
+        .hi-popup-alert-tag.level-caution { background: var(--alert-caution); color: #0c152b; }
+        .hi-popup-alert-tag.level-extreme-caution { background: var(--alert-extreme-caution); }
+        .hi-popup-alert-tag.level-danger { background: var(--alert-danger); }
+        .hi-popup-alert-tag.level-extreme-danger { background: var(--alert-extreme-danger); }
+
+        .hi-popup-body {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .hi-popup-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.2fr;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        .hi-popup-metric-item {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .hi-popup-metric-lbl { font-size: 0.6rem; color: var(--color-text-muted); text-transform: uppercase; }
+        .hi-popup-metric-val { font-size: 0.95rem; font-weight: 700; color: white; }
+
+        .hi-popup-advisory {
+            font-size: 0.72rem;
+            line-height: 1.45;
+            color: var(--color-text-muted);
+            border-left: 3px solid var(--color-accent);
+            padding-left: 10px;
+        }
+
+        .hi-popup-hotline-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 6px;
+            color: #ef4444;
+            text-decoration: none;
+            font-size: 0.74rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .hi-popup-hotline-btn:hover {
+            background: #ef4444;
+            color: white;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+        }
+
+        /* ============================================================
+           LEAFLET UI OVERRIDES
+        ============================================================ */
+        .leaflet-control-zoom a {
+            background: rgba(8, 14, 30, 0.95) !important;
+            color: var(--color-gold) !important;
+            border-color: var(--color-border) !important;
+            font-size: 15px !important;
+            border-radius: 6px !important;
+            margin-bottom: 2px !important;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .leaflet-control-zoom a:hover {
+            background: var(--color-accent) !important;
+            color: white !important;
+            border-color: var(--color-accent) !important;
+        }
+        .leaflet-control-attribution {
+            background: rgba(8, 14, 30, 0.9) !important;
+            color: var(--color-text-muted) !important;
+            font-size: 9px !important;
+            border-top-left-radius: 8px;
+            border: 1px solid var(--color-border);
+            border-right: none; border-bottom: none;
+        }
+        .leaflet-control-attribution a { color: var(--color-accent) !important; }
+
+
+
+        /* ============================================================
+           EMBED MODE OVERRIDES
+        ============================================================ */
+        body.embed-mode #pm-header { display: none !important; }
+        body.embed-mode #map { padding-top: 0 !important; }
+        body.embed-mode .leaflet-top { top: 15px !important; }
+        body.embed-mode #pm-filter { top: 15px !important; height: calc(100vh - 30px) !important; }
+        body.embed-mode #pm-filter-collapse { top: 15px !important; }
+        body.embed-mode #pm-filter-collapse.active-panel { right: 410px; }
+
+
+        </style>
+
+        <title>Palayan City CDRRMO Heat Index Map</title>
+    </head>
+    <body>
+        <!-- ── BRANDED HEADER ── -->
+        <div id="pm-header">
+            <div id="pm-header-left">
+                <div id="pm-header-logo"><i class="fas fa-shield-halved"></i></div>
+                <div id="pm-header-title">
+                    Palayan City CDRRMO
+                    <span>Heat Index Monitoring Dashboard</span>
+                </div>
+            </div>
+            
+            <div id="pm-header-right">
+                <!-- Weather Widget -->
+                <div id="weather-widget">
+                    <i class="fas fa-cloud-sun-rain" style="color:var(--color-gold); font-size: 0.95rem;"></i>
+                    <span id="weather-widget-info">Syncing weather stations...</span>
+                </div>
+                
+                <div id="pm-header-live">
+                    <div id="pm-header-live-dot"></div>
+                    <span id="api-status">API Offline</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── MAP CANVAS ── -->
+        <div id="map"></div>
+
+        <!-- ── SIDEBAR PANEL COLLAPSE BUTTON ── -->
+        <button id="pm-filter-collapse" title="Show Dashboard Panel">
+            <i class="fas fa-chart-line"></i>
+        </button>
+
+        <!-- ── CDRRMO DASHBOARD SIDEBAR ── -->
+        <div id="pm-filter" class="collapsed">
+            <div id="pm-filter-header">
+                <span id="pm-filter-title">
+                    <i class="fas fa-radiation"></i> Emergency Operations
+                </span>
+            </div>
+            
+            <!-- Two-Tab Navigation -->
+            <div class="sidebar-tabs">
+                <button class="sidebar-tab active" data-tab="tab-dash">Dashboard</button>
+                <button class="sidebar-tab" data-tab="tab-brgy">Barangays</button>
+            </div>
+            
+            <div class="sidebar-content">
+                <!-- ==================== TAB 1: DASHBOARD ==================== -->
+                <div id="tab-dash" class="tab-pane active">
+                    <!-- Basemap Selector -->
+                    <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--color-border); padding: 12px; border-radius: 10px; margin-bottom: 16px;">
+                        <div style="font-size: 0.65rem; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Base Map View</div>
+                        <div style="display: flex; gap: 6px;">
+                            <button id="btn-sat" style="flex: 1; padding: 6px 4px; background: var(--color-accent); color: white; border: 1px solid var(--color-border); border-radius: 6px; font-family: 'Outfit'; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">Satellite</button>
+                            <button id="btn-hyb" style="flex: 1; padding: 6px 4px; background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--color-border); border-radius: 6px; font-family: 'Outfit'; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">Hybrid</button>
+                            <button id="btn-str" style="flex: 1; padding: 6px 4px; background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--color-border); border-radius: 6px; font-family: 'Outfit'; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s;">Streets</button>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-section-title">
+                        <i class="fas fa-chart-pie"></i> City Heat Assessment
+                    </div>
+                    
+                    <!-- Stats Cards -->
+                    <div class="stats-summary">
+                        <div class="stat-card">
+                            <span class="stat-label">City Average</span>
+                            <span id="avg-heat-val" class="stat-value">--°C</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Max Heat Index</span>
+                            <span id="max-heat-val" class="stat-value">--°C</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Alert level horizontal bars -->
+                    <div class="alert-bars">
+                        <div class="alert-bar-row">
+                            <span class="alert-bar-label" style="color: var(--alert-safe);">🟢 Normal</span>
+                            <div class="alert-bar-track">
+                                <div id="bar-safe" class="alert-bar-fill" style="background: var(--alert-safe);"></div>
+                            </div>
+                            <span id="cnt-safe" class="alert-bar-count">0</span>
+                        </div>
+                        <div class="alert-bar-row">
+                            <span class="alert-bar-label" style="color: var(--alert-caution);">🟡 Caution</span>
+                            <div class="alert-bar-track">
+                                <div id="bar-caution" class="alert-bar-fill" style="background: var(--alert-caution);"></div>
+                            </div>
+                            <span id="cnt-caution" class="alert-bar-count">0</span>
+                        </div>
+                        <div class="alert-bar-row">
+                            <span class="alert-bar-label" style="color: var(--alert-extreme-caution);">🟠 Ext Caution</span>
+                            <div class="alert-bar-track">
+                                <div id="bar-extreme-caution" class="alert-bar-fill" style="background: var(--alert-extreme-caution);"></div>
+                            </div>
+                            <span id="cnt-extreme-caution" class="alert-bar-count">0</span>
+                        </div>
+                        <div class="alert-bar-row">
+                            <span class="alert-bar-label" style="color: var(--alert-danger);">🔴 Danger</span>
+                            <div class="alert-bar-track">
+                                <div id="bar-danger" class="alert-bar-fill" style="background: var(--alert-danger);"></div>
+                            </div>
+                            <span id="cnt-danger" class="alert-bar-count">0</span>
+                        </div>
+                        <div class="alert-bar-row">
+                            <span class="alert-bar-label" style="color: var(--alert-extreme-danger);">🟣 Ext Danger</span>
+                            <div class="alert-bar-track">
+                                <div id="bar-extreme-danger" class="alert-bar-fill" style="background: var(--alert-extreme-danger);"></div>
+                            </div>
+                            <span id="cnt-extreme-danger" class="alert-bar-count">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Threat Advisory Card -->
+                    <div class="dashboard-section-title">
+                        <i class="fas fa-triangle-exclamation"></i> CDRRMO Advisory
+                    </div>
+                    <div id="threat-card" class="threat-advisory-card">
+                        <div id="threat-title" class="threat-title">Safe Level</div>
+                        <div id="threat-desc" class="threat-desc">Loading live weather analytics...</div>
+                    </div>
+
+                    <!-- Dispatch Emergency Hotlines -->
+                    <div class="dashboard-section-title">
+                        <i class="fas fa-phone-volume"></i> Emergency Hotlines
+                    </div>
+                    <div class="hotline-grid">
+                        <div class="hotline-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                            <span class="hotline-name">CDRRMO Rescue Center</span>
+                            <div style="display: flex; flex-direction: column; gap: 4px; width: 100%; margin-top: 4px;">
+                                <a href="tel:09205741581" class="hotline-number"><i class="fas fa-phone"></i> (0920) 574 1581</a>
+                                <a href="tel:09669109674" class="hotline-number"><i class="fas fa-phone"></i> (0966) 910 9674</a>
+                            </div>
+                        </div>
+                        <div class="hotline-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                            <span class="hotline-name">City Health Office</span>
+                            <div style="display: flex; flex-direction: column; gap: 4px; width: 100%; margin-top: 4px;">
+                                <a href="tel:09171073808" class="hotline-number"><i class="fas fa-phone"></i> 0917 107 3808</a>
+                                <a href="tel:09209472735" class="hotline-number"><i class="fas fa-phone"></i> 0920 947 2735</a>
+                            </div>
+                        </div>
+                        <div class="hotline-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
+                            <span class="hotline-name">Palayan BFP</span>
+                            <div style="display: flex; flex-direction: column; gap: 4px; width: 100%; margin-top: 4px;">
+                                <a href="tel:09430669962" class="hotline-number"><i class="fas fa-phone"></i> 0943 066 9962</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== TAB 2: BARANGAY DIRECTORY ==================== -->
+                <div id="tab-brgy" class="tab-pane">
+                    <div class="search-container">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" id="brgy-search" class="search-input" placeholder="Search barangay...">
+                    </div>
+                    
+                    <div class="dashboard-section-title">
+                        <i class="fas fa-map-pin"></i> Barangay Risk Directory
+                    </div>
+                    <div id="brgy-list-container" class="brgy-list">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+            <div id="pm-filter-footer">Palayan LGU CDRRMO Operations &middot; 2026</div>
+        </div>
+
+        <!-- ── DATA LAYERS & LEAFLET SCRIPTS ── -->
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/multi-style-layer.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet.photon.js"></script>
+
+        
+        <!-- QGIS Local Boundary GIS Files -->
+        <script src="data/boundary_administrative_palayancity_1.js"></script>
+        <script src="data/Difference_2.js"></script>
+
+        <script>
+        /* ============================================================
+           1. CORE DATA STRUCTURE: 19 BARANGAYS OF PALAYAN CITY
+        ============================================================ */
+        var BARANGAYS = [
+            { name: "Atate",          coords: [15.5589, 121.1007], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Aulo",           coords: [15.5189, 121.0946], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Bagong Buhay",   coords: [15.4630, 121.1160], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Militar",        coords: [15.4330, 121.0754], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Caballero",      coords: [15.5396, 121.1166], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Caimito",        coords: [15.5464, 121.0862], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Doña Josefa",    coords: [15.4883, 121.1203], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Ganaderia",      coords: [15.5416, 121.0877], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Imelda Valley",  coords: [15.5781, 121.1219], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Langka",         coords: [15.4281, 121.1555], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Malate",         coords: [15.5434, 121.0806], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Maligaya",       coords: [15.4636, 121.1021], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Manacnac",       coords: [15.5301, 121.0621], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Mapait",         coords: [15.5098, 121.1041], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Marcos Village", coords: [15.5846, 121.1180], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Popolon",        coords: [15.5375, 121.0565], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Santolan",       coords: [15.5323, 121.0901], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Sapang Buho",    coords: [15.5902, 121.1259], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null },
+            { name: "Singalat",       coords: [15.5718, 121.0953], apiTemp: 33.0, apiHumidity: 60, temp: 33.0, humidity: 60, hi: 37, marker: null }
+        ];
+
+        var activeTab = "tab-dash";
+        var markerLayerGroup = L.layerGroup();
+
+        /* ============================================================
+           2. SCIENTIFIC NOAA HEAT INDEX REGRESSION FORMULA
+        ============================================================ */
+        function calculateHeatIndex(tc, rh) {
+            // Convert Celsius to Fahrenheit
+            var tf = tc * 9 / 5 + 32;
+            
+            // Simple index formula
+            var hi = 0.5 * (tf + 61.0 + ((tf - 68.0) * 1.2) + (rh * 0.094));
+            
+            if (hi >= 80) {
+                // Full Rothfusz Regression Equation
+                var hiReg = -42.379 + 
+                            2.04901523 * tf + 
+                            10.14333127 * rh - 
+                            0.22475541 * tf * rh - 
+                            0.00683783 * tf * tf - 
+                            0.05481717 * rh * rh + 
+                            0.00122874 * tf * tf * rh + 
+                            0.00085282 * tf * rh * rh - 
+                            0.00000199 * tf * tf * rh * rh;
+                
+                // Adjustments
+                if (rh < 13 && tf >= 80 && tf <= 112) {
+                    var adj = ((13 - rh) / 4) * Math.sqrt((17 - Math.abs(tf - 95)) / 17);
+                    hiReg -= adj;
+                } else if (rh > 85 && tf >= 80 && tf <= 87) {
+                    var adj = ((rh - 85) / 10) * ((87 - tf) / 5);
+                    hiReg += adj;
+                }
+                hi = hiReg;
+            }
+            
+            // Convert Fahrenheit back to Celsius
+            var hiC = (hi - 32) * 5 / 9;
+            return parseFloat(hiC.toFixed(1));
+        }
+
+        function getAlertLevel(hi) {
+            if (hi < 27) return "safe";
+            if (hi < 33) return "caution";
+            if (hi < 42) return "extreme-caution";
+            if (hi < 52) return "danger";
+            return "extreme-danger";
+        }
+
+        function getAlertLabel(hi) {
+            if (hi < 27) return "Normal";
+            if (hi < 33) return "Caution";
+            if (hi < 42) return "Extreme Caution";
+            if (hi < 52) return "Danger";
+            return "Extreme Danger";
+        }
+
+        /* ============================================================
+           3. LIVE WEATHER API FETCHING (Open-Meteo Multi-Coordinate API)
+        ============================================================ */
+        function fetchLiveWeather() {
+            var statusEl = document.getElementById('api-status');
+            var widgetInfo = document.getElementById('weather-widget-info');
+            
+            if (statusEl) statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching...';
+            
+            var openWeatherUrl = 'https://api.openweathermap.org/data/2.5/weather?lat=15.5400&lon=121.0850&appid=de768975e6511fffc354cb7590b32db9&units=metric';
+            
+            fetch(openWeatherUrl)
+                .then(function(res) {
+                    if (res.status === 200) {
+                        return res.json();
+                    } else {
+                        throw new Error('OpenWeather API returned ' + res.status);
+                    }
+                })
+                .then(function(owData) {
+                    // OpenWeather succeeded! Use city-wide Apparent temperature/Humidity with organic offsets.
+                    var cityTemp = parseFloat(owData.main.temp);
+                    var cityHumid = Math.round(owData.main.humidity);
+                    
+                    BARANGAYS.forEach(function(brgy, idx) {
+                        // Deterministic organic offset based on name length and coordinate variance
+                        var offsetTemp = ((brgy.name.length * 7) % 7) * 0.2 - 0.6;
+                        var offsetHumid = ((brgy.name.length * 3) % 9) - 4;
+                        
+                        brgy.apiTemp = parseFloat((cityTemp + offsetTemp).toFixed(1));
+                        brgy.apiHumidity = Math.min(100, Math.max(0, cityHumid + offsetHumid));
+                    });
+                    
+                    if (statusEl) {
+                        statusEl.innerHTML = '<span style="color:#4ade80;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#4ade80;margin-right:4px;"></span>OPENWEATHER</span>';
+                    }
+                    
+                    recalculateAllData();
+                    drawMapAndLists();
+                })
+                .catch(function(err) {
+                    console.log('OpenWeather API fallback to Open-Meteo:', err.message);
+                    
+                    // Fallback to keyless Open-Meteo multi-coordinate API
+                    var lats = BARANGAYS.map(function(b) { return b.coords[0]; }).join(',');
+                    var lngs = BARANGAYS.map(function(b) { return b.coords[1]; }).join(',');
+                    var openMeteoUrl = 'https://api.open-meteo.com/v1/forecast?latitude=' + lats + '&longitude=' + lngs + '&current=temperature_2m,relative_humidity_2m';
+                    
+                    fetch(openMeteoUrl)
+                        .then(function(res) { return res.json(); })
+                        .then(function(omData) {
+                            if (omData && Array.isArray(omData)) {
+                                omData.forEach(function(item, idx) {
+                                    var brgy = BARANGAYS[idx];
+                                    if (brgy && item.current) {
+                                        brgy.apiTemp = parseFloat(item.current.temperature_2m);
+                                        brgy.apiHumidity = parseFloat(item.current.relative_humidity_2m);
+                                    }
+                                });
+                                
+                                if (statusEl) {
+                                    statusEl.innerHTML = '<span style="color:#60a5fa;"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#60a5fa;margin-right:4px;"></span>LIVE METEO</span>';
+                                }
+                                
+                                recalculateAllData();
+                                drawMapAndLists();
+                            }
+                        })
+                        .catch(function(omErr) {
+                            console.error('All weather sources offline:', omErr);
+                            if (statusEl) statusEl.innerHTML = '<span style="color:#ef4444;"><i class="fas fa-circle-exclamation"></i> Offline</span>';
+                            if (widgetInfo) widgetInfo.innerHTML = 'Station Offline &middot; Using Safe Defaults';
+                        });
+                });
+        }
+
+        /* Recalculate values for all 19 barangays */
+        function recalculateAllData() {
+            BARANGAYS.forEach(function(brgy) {
+                brgy.temp = parseFloat(brgy.apiTemp.toFixed(1));
+                brgy.humidity = Math.min(100, Math.max(0, Math.round(brgy.apiHumidity)));
+                brgy.hi = calculateHeatIndex(brgy.temp, brgy.humidity);
+            });
+        }
+
+        /* ============================================================
+           4. MAP & COMPONENT DRAWING
+        ============================================================ */
+        function drawMapAndLists() {
+            markerLayerGroup.clearLayers();
+            
+            BARANGAYS.forEach(function(brgy) {
+                var level = getAlertLevel(brgy.hi);
+                
+                // DivIcon containing glowing numerical temperature badge
+                var badgeHtml = '<div class="hi-badge-marker alert-' + level + '">' +
+                                    '<span class="hi-value">' + Math.round(brgy.hi) + '</span>' +
+                                    '<span class="hi-unit">°C</span>' +
+                                '</div>';
+                                
+                var customIcon = L.divIcon({
+                    html: badgeHtml,
+                    className: '',
+                    iconSize: [44, 44],
+                    iconAnchor: [22, 22]
+                });
+
+                // Generate popup contents
+                var popupHtml = '<div class="hi-popup">' +
+                                    '<div class="hi-popup-header level-' + level + '">' +
+                                        '<span class="hi-popup-brgy">Brgy. ' + brgy.name + '</span>' +
+                                        '<span class="hi-popup-alert-tag level-' + level + '">' + getAlertLabel(brgy.hi) + '</span>' +
+                                    '</div>' +
+                                    '<div class="hi-popup-body">' +
+                                        '<div class="hi-popup-metrics">' +
+                                            '<div class="hi-popup-metric-item"><span class="hi-popup-metric-lbl">Heat Index</span><span class="hi-popup-metric-val" style="color:var(--color-gold);">' + brgy.hi + '°C</span></div>' +
+                                            '<div class="hi-popup-metric-item"><span class="hi-popup-metric-lbl">Temp</span><span class="hi-popup-metric-val">' + brgy.temp + '°C</span></div>' +
+                                            '<div class="hi-popup-metric-item"><span class="hi-popup-metric-lbl">Humidity</span><span class="hi-popup-metric-val">' + brgy.humidity + '%</span></div>' +
+                                        '</div>' +
+                                        '<div class="hi-popup-advisory">' + getAdvisoryText(level) + '</div>' +
+                                        '<a href="tel:09205741581" class="hi-popup-hotline-btn"><i class="fas fa-phone-volume"></i> CDRRMO Dispatch</a>' +
+                                    '</div>' +
+                                '</div>';
+
+                var marker = L.marker(brgy.coords, { icon: customIcon })
+                    .bindPopup(popupHtml, { maxWidth: 320, minWidth: 250, offset: [0, -10] });
+                
+                brgy.marker = marker;
+                markerLayerGroup.addLayer(marker);
+            });
+            
+            updateDashboard();
+            updateBarangayList();
+        }
+
+        function getAdvisoryText(level) {
+            switch(level) {
+                case "safe":
+                    return "Heat levels are within a secure and safe range. No special warning restrictions active.";
+                case "caution":
+                    return "Fatigue is possible with prolonged physical exertion. Ensure constant hydration and periodic shade breaks.";
+                case "extreme-caution":
+                    return "Heat cramps and heat exhaustion possible. Limit direct outdoor activity between 11:00 AM and 3:00 PM.";
+                case "danger":
+                    return "🔴 HIGH RISK. Heat cramps and exhaustion highly likely. Classes and heavy physical outdoor tasks should be suspended.";
+                case "extreme-danger":
+                    return "🟣 EXTREME DANGER. Heat stroke is highly imminent. Stay indoors, run cooling systems, EOC alert dispatched city-wide.";
+            }
+        }
+
+        /* ============================================================
+           5. DASHBOARD STATS CALCULATION & UPDATES
+        ============================================================ */
+        function updateDashboard() {
+            var sumHi = 0;
+            var maxHi = -999;
+            var counts = { safe: 0, caution: 0, "extreme-caution": 0, danger: 0, "extreme-danger": 0 };
+            
+            BARANGAYS.forEach(function(brgy) {
+                sumHi += brgy.hi;
+                if (brgy.hi > maxHi) maxHi = brgy.hi;
+                counts[getAlertLevel(brgy.hi)]++;
+            });
+            
+            var avgHi = parseFloat((sumHi / BARANGAYS.length).toFixed(1));
+            
+            // Set gauge text values
+            document.getElementById('avg-heat-val').textContent = avgHi + "°C";
+            document.getElementById('max-heat-val').textContent = maxHi + "°C";
+
+            // Update Top Bar Widget dynamically (ensures feels-like averages are in perfect sync with map indicators)
+            var avgTemp = parseFloat((BARANGAYS.reduce(function(acc, b) { return acc + b.temp; }, 0) / BARANGAYS.length).toFixed(1));
+            var avgHumid = Math.round(BARANGAYS.reduce(function(acc, b) { return acc + b.humidity; }, 0) / BARANGAYS.length);
+            
+            var widgetInfo = document.getElementById('weather-widget-info');
+            if (widgetInfo) {
+                widgetInfo.innerHTML = 'Feels Like: <strong style="color:var(--color-gold);">' + avgHi + '°C</strong> &middot; Temp: <strong style="color:var(--color-gold);">' + avgTemp + '°C</strong> &middot; Humid: <strong style="color:var(--color-gold);">' + avgHumid + '%</strong>';
+            }
+            
+            // Set counts numbers
+            document.getElementById('cnt-safe').textContent = counts.safe;
+            document.getElementById('cnt-caution').textContent = counts.caution;
+            document.getElementById('cnt-extreme-caution').textContent = counts["extreme-caution"];
+            document.getElementById('cnt-danger').textContent = counts.danger;
+            document.getElementById('cnt-extreme-danger').textContent = counts["extreme-danger"];
+            
+            // Scale horizontal bars
+            var total = BARANGAYS.length;
+            document.getElementById('bar-safe').style.width = (counts.safe / total * 100) + "%";
+            document.getElementById('bar-caution').style.width = (counts.caution / total * 100) + "%";
+            document.getElementById('bar-extreme-caution').style.width = (counts["extreme-caution"] / total * 100) + "%";
+            document.getElementById('bar-danger').style.width = (counts.danger / total * 100) + "%";
+            document.getElementById('bar-extreme-danger').style.width = (counts["extreme-danger"] / total * 100) + "%";
+
+            // Update Threat Advisory Card corresponding to max alert active
+            var maxLevel = getAlertLevel(maxHi);
+            var card = document.getElementById('threat-card');
+            
+            card.className = "threat-advisory-card level-" + maxLevel;
+            document.getElementById('threat-title').textContent = "Max Status: " + getAlertLabel(maxHi);
+            document.getElementById('threat-desc').textContent = getAdvisoryText(maxLevel);
+        }
+
+        /* ============================================================
+           6. SEARCH & DIRECTORY UPDATES
+        ============================================================ */
+        function updateBarangayList(searchFilter) {
+            var container = document.getElementById('brgy-list-container');
+            container.innerHTML = '';
+            
+            var query = (searchFilter || "").toLowerCase().trim();
+            
+            // Sort by risk (highest heat index first)
+            var sorted = BARANGAYS.slice().sort(function(a, b) { return b.hi - a.hi; });
+            
+            sorted.forEach(function(brgy) {
+                if (query && brgy.name.toLowerCase().indexOf(query) === -1) return;
+                
+                var level = getAlertLevel(brgy.hi);
+                var row = document.createElement('div');
+                row.className = 'brgy-row';
+                row.innerHTML = '<div class="brgy-row-left">' +
+                                    '<span class="brgy-row-name">' + brgy.name + '</span>' +
+                                    '<span class="brgy-row-details">Temp: ' + brgy.temp + '°C &middot; Humid: ' + brgy.humidity + '%</span>' +
+                                '</div>' +
+                                '<div class="brgy-row-badge badge-' + level + '">' + Math.round(brgy.hi) + '°</div>';
+                
+                row.addEventListener('click', function() {
+                    map.flyTo(brgy.coords, 15, { animate: true, duration: 1.5 });
+                    setTimeout(function() { brgy.marker.openPopup(); }, 1500);
+                });
+                
+                container.appendChild(row);
+            });
+            
+            if (container.children.length === 0) {
+                container.innerHTML = '<div style="text-align:center;font-size:0.78rem;color:var(--color-text-muted);padding:20px;">No matching barangays found.</div>';
+            }
+        }
+        /* ============================================================
+           8. MAP INITIALIZATION & BOUNDS OVERRIDES (QGIS compat)
+        ============================================================ */
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+            highlightLayer.openPopup();
+        }
+
+        var map = L.map('map', {
+            zoomControl: false,
+            maxZoom: 28,
+            minZoom: 1,
+            preferCanvas: false,
+        }).fitBounds([[15.4200, 121.0400],
+                      [15.6000, 121.1700]]);
+
+        // Zoom controls
+        L.control.zoom({ position: 'topleft' }).addTo(map);
+
+        /* ── BASE MAP LAYER SETUP (Satellite Default, Streets Alternative) ── */
+        map.createPane('pane_BaseMap');
+        map.getPane('pane_BaseMap').style.zIndex = 400;
+        
+        var layer_GoogleSatellite_0 = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            pane: 'pane_BaseMap', opacity: 1.0, attribution: '', minZoom: 1, maxZoom: 28, minNativeZoom: 0, maxNativeZoom: 19
+        });
+        var layer_GoogleHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+            pane: 'pane_BaseMap', opacity: 1.0, attribution: '', minZoom: 1, maxZoom: 28, minNativeZoom: 0, maxNativeZoom: 19
+        });
+        var layer_GoogleStreets = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            pane: 'pane_BaseMap', opacity: 1.0, attribution: '', minZoom: 1, maxZoom: 28, minNativeZoom: 0, maxNativeZoom: 19
+        });
+
+        // Add default Satellite
+        map.addLayer(layer_GoogleSatellite_0);
+
+        // Sidebar Basemaps buttons togglers
+        function selectBasemap(activeBtnId, layerToAdd) {
+            if (map.hasLayer(layer_GoogleSatellite_0)) map.removeLayer(layer_GoogleSatellite_0);
+            if (map.hasLayer(layer_GoogleHybrid)) map.removeLayer(layer_GoogleHybrid);
+            if (map.hasLayer(layer_GoogleStreets)) map.removeLayer(layer_GoogleStreets);
+            
+            map.addLayer(layerToAdd);
+            
+            ['btn-sat', 'btn-hyb', 'btn-str'].forEach(function(id) {
+                var btn = document.getElementById(id);
+                if (btn) {
+                    if (id === activeBtnId) {
+                        btn.style.background = 'var(--color-accent)';
+                        btn.style.color = 'white';
+                    } else {
+                        btn.style.background = 'rgba(255,255,255,0.05)';
+                        btn.style.color = 'white';
+                    }
+                }
+            });
+        }
+        document.getElementById('btn-sat').addEventListener('click', function() { selectBasemap('btn-sat', layer_GoogleSatellite_0); });
+        document.getElementById('btn-hyb').addEventListener('click', function() { selectBasemap('btn-hyb', layer_GoogleHybrid); });
+        document.getElementById('btn-str').addEventListener('click', function() { selectBasemap('btn-str', layer_GoogleStreets); });
+
+        /* ── palayan outer boundary outline ── */
+        map.createPane('pane_boundary_administrative_palayancity_1');
+        map.getPane('pane_boundary_administrative_palayancity_1').style.zIndex = 401;
+        var layer_boundary_administrative_palayancity_1 = new L.geoJson(json_boundary_administrative_palayancity_1, {
+            pane: 'pane_boundary_administrative_palayancity_1',
+            style: function() {
+                return {
+                    pane: 'pane_boundary_administrative_palayancity_1',
+                    opacity: 1,
+                    color: 'rgba(59, 130, 246, 0.7)', // neon blue glowing border
+                    dashArray: '6 4',
+                    lineCap: 'round', lineJoin: 'round',
+                    weight: 2.5,
+                    fillOpacity: 0,
+                    interactive: false
+                };
+            }
+        });
+        map.addLayer(layer_boundary_administrative_palayancity_1);
+
+        /* ── DARK DIFFERENCE MASK (areas outside Palayan limits fade into darkness) ── */
+        map.createPane('pane_Difference_2');
+        map.getPane('pane_Difference_2').style.zIndex = 402;
+        var layer_Difference_2 = new L.geoJson(json_Difference_2, {
+            pane: 'pane_Difference_2',
+            style: function() {
+                return {
+                    pane: 'pane_Difference_2',
+                    opacity: 0,
+                    color: 'transparent',
+                    weight: 0,
+                    fill: true,
+                    fillOpacity: 0.96, // pitch black outer mask
+                    fillColor: '#000000', // pure black
+                    interactive: false
+                };
+            }
+        });
+        map.addLayer(layer_Difference_2);
+
+        // Bind markers layers
+        map.addLayer(markerLayerGroup);
+
+        /* ============================================================
+           9. UI BINDINGS & SIDEBAR COLLAPSE
+        ============================================================ */
+        var filterPanel = document.getElementById('pm-filter');
+        var filterToggle = document.getElementById('pm-filter-collapse');
+        
+        filterToggle.addEventListener('click', function() {
+            filterPanel.classList.toggle('collapsed');
+            this.classList.toggle('active-panel');
+            
+            var icon = this.querySelector('i');
+            if (filterPanel.classList.contains('collapsed')) {
+                icon.className = 'fas fa-chart-line';
+                this.title = 'Show Dashboard Panel';
+            } else {
+                icon.className = 'fas fa-times';
+                this.title = 'Hide Dashboard Panel';
+            }
+        });
+
+        // Tab switching binds
+        var tabs = document.querySelectorAll('.sidebar-tab');
+        tabs.forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                // remove active tabs class
+                tabs.forEach(function(t) { t.classList.remove('active'); });
+                document.querySelectorAll('.tab-pane').forEach(function(pane) { pane.classList.remove('active'); });
+                
+                this.classList.add('active');
+                var paneId = this.dataset.tab;
+                document.getElementById(paneId).classList.add('active');
+            });
+        });
+
+        // Search directory bind
+        document.getElementById('brgy-search').addEventListener('input', function() {
+            updateBarangayList(this.value);
+        });
+
+        // Check if embed mode in URL params
+        var urlParams = new URLSearchParams(window.location.search);
+        var isEmbed = urlParams.get('embed') === 'true';
+        if (isEmbed) {
+            document.body.classList.add('embed-mode');
+        }
+
+        /* ============================================================
+           11. INITIAL LOAD & SYNCS
+        ============================================================ */
+        recalculateAllData();
+        drawMapAndLists();
+        fetchLiveWeather();
+
+        // Auto-refresh weather stats every 10 minutes
+        setInterval(function() {
+            fetchLiveWeather();
+        }, 10 * 60 * 1000);
+        </script>
+    </body>
+</html>

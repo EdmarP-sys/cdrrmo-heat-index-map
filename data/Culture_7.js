@@ -1,0 +1,1 @@
+var json_Culture_7 = {"type":"FeatureCollection","name":"Culture_7","crs":{"type":"name","properties":{"name":"urn:ogc:def:crs:OGC:1.3:CRS84"}},"features":[]}
